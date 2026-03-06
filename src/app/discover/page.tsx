@@ -14,6 +14,12 @@ import {
 } from "@/components/ui/dialog";
 import { Compass } from "lucide-react";
 
+interface ActiveExchange {
+  id: number;
+  status: string;
+  requester: { id: number; name: string };
+}
+
 interface Game {
   id: number;
   title: string;
@@ -25,6 +31,7 @@ interface Game {
   imageUrl?: string | null;
   userId: number;
   user: { id: number; name: string };
+  activeExchange: ActiveExchange | null;
 }
 
 export default function DiscoverPage() {
@@ -89,28 +96,36 @@ export default function DiscoverPage() {
         </div>
       ) : (
         <div className="grid grid-cols-2 gap-3">
-          {games.map((game) => (
-            <GameCard
-              key={game.id}
-              game={game}
-              onClick={currentUser && currentUser.id !== game.userId ? () => setSelected(game) : undefined}
-              actions={
-                currentUser && currentUser.id !== game.userId ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full text-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelected(game);
-                    }}
-                  >
-                    Échanger
-                  </Button>
-                ) : undefined
-              }
-            />
-          ))}
+          {games.map((game) => {
+            const isMine = currentUser && currentUser.id === game.userId;
+            const busy = !!game.activeExchange;
+            return (
+              <GameCard
+                key={game.id}
+                game={game}
+                onClick={!isMine && !busy ? () => setSelected(game) : undefined}
+                actions={
+                  isMine ? undefined : busy ? (
+                    <p className="text-xs text-muted-foreground text-center py-1">
+                      Emprunté par <span className="font-medium">{game.activeExchange!.requester.name}</span>
+                    </p>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelected(game);
+                      }}
+                    >
+                      Échanger
+                    </Button>
+                  )
+                }
+              />
+            );
+          })}
         </div>
       )}
 
