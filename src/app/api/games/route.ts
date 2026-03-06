@@ -8,10 +8,23 @@ export async function GET(request: Request) {
 
     const games = await prisma.game.findMany({
       where: userId ? { userId: parseInt(userId) } : undefined,
-      include: { user: { select: { id: true, name: true } } },
+      include: {
+        user: { select: { id: true, name: true } },
+        exchanges: {
+          where: { status: { in: ["pending", "accepted"] } },
+          select: { id: true, status: true, requester: { select: { id: true, name: true } } },
+          take: 1,
+        },
+      },
       orderBy: { createdAt: "desc" },
     });
-    return NextResponse.json(games);
+
+    const result = games.map(({ exchanges, ...game }) => ({
+      ...game,
+      activeExchange: exchanges[0] ?? null,
+    }));
+
+    return NextResponse.json(result);
   } catch (error) {
     console.error("GET /api/games", error);
     return NextResponse.json({ error: "Erreur serveur", details: String(error) }, { status: 500 });
