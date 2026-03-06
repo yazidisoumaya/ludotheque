@@ -22,6 +22,7 @@ interface Game {
   minPlayers?: number | null;
   maxPlayers?: number | null;
   minAge?: number | null;
+  imageUrl?: string | null;
   userId: number;
   user: { id: number; name: string };
 }
@@ -87,7 +88,7 @@ export default function DiscoverPage() {
           </p>
         </div>
       ) : (
-        <div className="grid gap-3">
+        <div className="grid grid-cols-2 gap-3">
           {games.map((game) => (
             <GameCard
               key={game.id}
@@ -98,13 +99,13 @@ export default function DiscoverPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="w-full"
+                    className="w-full text-xs"
                     onClick={(e) => {
                       e.stopPropagation();
                       setSelected(game);
                     }}
                   >
-                    Demander un échange
+                    Échanger
                   </Button>
                 ) : undefined
               }
