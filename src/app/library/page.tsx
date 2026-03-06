@@ -6,14 +6,8 @@ import GameCard from "@/components/GameCard";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Link from "next/link";
-import { Plus, BookOpen, ArrowLeftRight } from "lucide-react";
+import { Plus, BookOpen, HandHelping } from "lucide-react";
 import { useRouter } from "next/navigation";
-
-interface ActiveExchange {
-  id: number;
-  status: string;
-  requester: { id: number; name: string };
-}
 
 interface Game {
   id: number;
@@ -25,13 +19,22 @@ interface Game {
   minAge?: number | null;
   imageUrl?: string | null;
   user?: { name: string };
-  activeExchange: ActiveExchange | null;
+  activeExchange?: { id: number; status: string; requester: { id: number; name: string } } | null;
+}
+
+interface BorrowedExchange {
+  id: number;
+  status: string;
+  requesterId: number;
+  owner: { id: number; name: string };
+  game: Game;
 }
 
 export default function LibraryPage() {
   const { currentUser } = useUser();
   const router = useRouter();
   const [games, setGames] = useState<Game[]>([]);
+  const [borrowed, setBorrowed] = useState<BorrowedExchange[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -39,12 +42,19 @@ export default function LibraryPage() {
       setLoading(false);
       return;
     }
-    fetch(`/api/games?userId=${currentUser.id}`)
-      .then((r) => r.json())
-      .then((data) => {
-        setGames(data);
-        setLoading(false);
-      });
+    Promise.all([
+      fetch(`/api/games?userId=${currentUser.id}`).then((r) => r.json()),
+      fetch(`/api/exchanges?userId=${currentUser.id}`).then((r) => r.json()),
+    ]).then(([gamesData, exchangesData]) => {
+      setGames(gamesData);
+      // Emprunts = échanges où je suis le demandeur, en cours (pending/accepted)
+      setBorrowed(
+        (exchangesData as BorrowedExchange[]).filter(
+          (e) => e.requesterId === currentUser.id && ["pending", "accepted"].includes(e.status)
+        )
+      );
+      setLoading(false);
+    });
   }, [currentUser]);
 
   if (!currentUser) {
@@ -60,9 +70,6 @@ export default function LibraryPage() {
       </div>
     );
   }
-
-  const collection = games.filter((g) => !g.activeExchange);
-  const lent = games.filter((g) => !!g.activeExchange);
 
   return (
     <div className="space-y-4">
@@ -84,38 +91,34 @@ export default function LibraryPage() {
             <TabsTrigger value="collection" className="flex-1">
               Ma collection
               {games.length > 0 && (
-                <span className="ml-1.5 text-xs text-muted-foreground">({collection.length})</span>
+                <span className="ml-1.5 text-xs text-muted-foreground">({games.length})</span>
               )}
             </TabsTrigger>
-            <TabsTrigger value="lent" className="flex-1">
-              Prêtés
-              {lent.length > 0 && (
-                <span className="ml-1.5 text-xs font-medium text-primary">({lent.length})</span>
+            <TabsTrigger value="borrowed" className="flex-1">
+              Mes emprunts
+              {borrowed.length > 0 && (
+                <span className="ml-1.5 text-xs font-medium text-primary">({borrowed.length})</span>
               )}
             </TabsTrigger>
           </TabsList>
 
           {/* Onglet Ma collection */}
           <TabsContent value="collection" className="mt-3">
-            {collection.length === 0 ? (
+            {games.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
                 <BookOpen className="h-10 w-10 text-muted-foreground" />
                 <p className="text-muted-foreground text-sm">
-                  {games.length === 0
-                    ? "Tu n'as pas encore de jeux dans ta bibliothèque."
-                    : "Tous tes jeux sont actuellement prêtés !"}
+                  Tu n&apos;as pas encore de jeux dans ta bibliothèque.
                 </p>
-                {games.length === 0 && (
-                  <Link href="/library/add">
-                    <Button variant="outline" size="sm">
-                      Ajouter mon premier jeu
-                    </Button>
-                  </Link>
-                )}
+                <Link href="/library/add">
+                  <Button variant="outline" size="sm">
+                    Ajouter mon premier jeu
+                  </Button>
+                </Link>
               </div>
             ) : (
               <div className="grid gap-3">
-                {collection.map((game) => (
+                {games.map((game) => (
                   <GameCard
                     key={game.id}
                     game={game}
@@ -126,31 +129,33 @@ export default function LibraryPage() {
             )}
           </TabsContent>
 
-          {/* Onglet Prêtés */}
-          <TabsContent value="lent" className="mt-3">
-            {lent.length === 0 ? (
+          {/* Onglet Mes emprunts */}
+          <TabsContent value="borrowed" className="mt-3">
+            {borrowed.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
-                <ArrowLeftRight className="h-10 w-10 text-muted-foreground" />
+                <HandHelping className="h-10 w-10 text-muted-foreground" />
                 <p className="text-muted-foreground text-sm">
-                  Aucun jeu en cours de prêt.
+                  Tu n&apos;as aucun emprunt en cours.
                 </p>
+                <Link href="/discover">
+                  <Button variant="outline" size="sm">
+                    Découvrir des jeux
+                  </Button>
+                </Link>
               </div>
             ) : (
               <div className="grid gap-3">
-                {lent.map((game) => (
+                {borrowed.map((exchange) => (
                   <GameCard
-                    key={game.id}
-                    game={game}
-                    onClick={() => router.push(`/library/${game.id}`)}
+                    key={exchange.id}
+                    game={exchange.game}
                     actions={
                       <p className="text-xs text-muted-foreground">
-                        Prêté à{" "}
-                        <span className="font-medium">
-                          {game.activeExchange!.requester.name}
-                        </span>
+                        Emprunté à{" "}
+                        <span className="font-medium">{exchange.owner.name}</span>
                         {" · "}
-                        <span className={game.activeExchange!.status === "accepted" ? "text-green-600" : "text-amber-600"}>
-                          {game.activeExchange!.status === "accepted" ? "Accepté" : "En attente"}
+                        <span className={exchange.status === "accepted" ? "text-green-600" : "text-amber-600"}>
+                          {exchange.status === "accepted" ? "Accepté" : "En attente"}
                         </span>
                       </p>
                     }
