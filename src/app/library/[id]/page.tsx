@@ -29,8 +29,19 @@ interface Game {
   minPlayers?: number | null;
   maxPlayers?: number | null;
   minAge?: number | null;
+  imageUrl?: string | null;
   userId: number;
   user: { id: number; name: string };
+}
+
+interface GameForm {
+  title: string;
+  description: string;
+  category: string;
+  minPlayers: string;
+  maxPlayers: string;
+  minAge: string;
+  imageUrl: string;
 }
 
 export default function GameDetailPage() {
@@ -41,13 +52,14 @@ export default function GameDetailPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<GameForm>({
     title: "",
     description: "",
     category: "",
     minPlayers: "",
     maxPlayers: "",
     minAge: "",
+    imageUrl: "",
   });
 
   useEffect(() => {
@@ -62,12 +74,13 @@ export default function GameDetailPage() {
           minPlayers: data.minPlayers?.toString() ?? "",
           maxPlayers: data.maxPlayers?.toString() ?? "",
           minAge: data.minAge?.toString() ?? "",
+          imageUrl: data.imageUrl ?? "",
         });
         setLoading(false);
       });
   }, [id]);
 
-  const update = (field: string, value: string) =>
+  const update = (field: keyof GameForm, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
   const handleSave = async (e: React.FormEvent) => {
@@ -125,6 +138,18 @@ export default function GameDetailPage() {
       )}
 
       <form onSubmit={handleSave} className="space-y-4">
+        {/* Image preview */}
+        {form.imageUrl && (
+          <div className="rounded-lg overflow-hidden border">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={form.imageUrl}
+              alt={form.title}
+              className="w-full h-44 object-contain bg-muted"
+            />
+          </div>
+        )}
+
         <div className="space-y-2">
           <Label htmlFor="title">Titre *</Label>
           <Input

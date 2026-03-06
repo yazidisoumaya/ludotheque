@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import BggSearch, { type BggGame } from "@/components/BggSearch";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 
@@ -21,21 +22,44 @@ const CATEGORIES = [
   "Autre",
 ];
 
+interface GameForm {
+  title: string;
+  description: string;
+  category: string;
+  minPlayers: string;
+  maxPlayers: string;
+  minAge: string;
+  imageUrl: string;
+}
+
 export default function AddGamePage() {
   const { currentUser } = useUser();
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<GameForm>({
     title: "",
     description: "",
     category: "",
     minPlayers: "",
     maxPlayers: "",
     minAge: "",
+    imageUrl: "",
   });
 
-  const update = (field: string, value: string) =>
+  const update = (field: keyof GameForm, value: string) =>
     setForm((prev) => ({ ...prev, [field]: value }));
+
+  const handleBggSelect = (game: BggGame) => {
+    setForm({
+      title: game.title,
+      description: game.description ?? "",
+      category: game.category,
+      minPlayers: game.minPlayers?.toString() ?? "",
+      maxPlayers: game.maxPlayers?.toString() ?? "",
+      minAge: game.minAge?.toString() ?? "",
+      imageUrl: game.thumbnail ?? "",
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +92,30 @@ export default function AddGamePage() {
         <h1 className="text-xl font-bold">Ajouter un jeu</h1>
       </div>
 
+      {/* BGG Search */}
+      <div className="space-y-1.5">
+        <Label>Recherche rapide 🎲</Label>
+        <BggSearch onSelect={handleBggSelect} />
+        <p className="text-xs text-muted-foreground">
+          Sélectionne un jeu pour préremplir les champs automatiquement.
+        </p>
+      </div>
+
+      <div className="border-t pt-2" />
+
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Image preview */}
+        {form.imageUrl && (
+          <div className="rounded-lg overflow-hidden border">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={form.imageUrl}
+              alt={form.title}
+              className="w-full h-44 object-contain bg-muted"
+            />
+          </div>
+        )}
+
         <div className="space-y-2">
           <Label htmlFor="title">Titre *</Label>
           <Input

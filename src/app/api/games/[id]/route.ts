@@ -20,7 +20,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   try {
     const { id } = await params;
     const body = await request.json();
-    const { title, description, category, minPlayers, maxPlayers, minAge } = body;
+    const { title, description, category, minPlayers, maxPlayers, minAge, imageUrl } = body;
 
     const game = await prisma.game.update({
       where: { id: parseInt(id) },
@@ -31,6 +31,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         minPlayers: minPlayers ? parseInt(minPlayers) : null,
         maxPlayers: maxPlayers ? parseInt(maxPlayers) : null,
         minAge: minAge ? parseInt(minAge) : null,
+        imageUrl: imageUrl?.trim() || null,
       },
       include: { user: { select: { id: true, name: true } } },
     });

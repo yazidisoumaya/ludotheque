@@ -12,6 +12,7 @@ interface Game {
   minPlayers?: number | null;
   maxPlayers?: number | null;
   minAge?: number | null;
+  imageUrl?: string | null;
   user?: { name: string };
 }
 
@@ -24,9 +25,19 @@ interface GameCardProps {
 export default function GameCard({ game, onClick, actions }: GameCardProps) {
   return (
     <Card
-      className={`transition-shadow ${onClick ? "cursor-pointer hover:shadow-md" : ""}`}
+      className={`transition-shadow overflow-hidden ${onClick ? "cursor-pointer hover:shadow-md" : ""}`}
       onClick={onClick}
     >
+      {/* Cover image from BGG */}
+      {game.imageUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={game.imageUrl}
+          alt={game.title}
+          className="w-full h-36 object-cover"
+        />
+      )}
+
       <CardHeader className="pb-2">
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="text-base leading-tight">{game.title}</CardTitle>

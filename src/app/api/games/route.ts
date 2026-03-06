@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { title, description, category, minPlayers, maxPlayers, minAge, userId } = body;
+    const { title, description, category, minPlayers, maxPlayers, minAge, imageUrl, userId } = body;
 
     if (!title?.trim() || !userId) {
       return NextResponse.json({ error: "Titre et utilisateur requis" }, { status: 400 });
@@ -35,6 +35,7 @@ export async function POST(request: Request) {
         minPlayers: minPlayers ? parseInt(minPlayers) : null,
         maxPlayers: maxPlayers ? parseInt(maxPlayers) : null,
         minAge: minAge ? parseInt(minAge) : null,
+        imageUrl: imageUrl?.trim() || null,
         userId: parseInt(userId),
       },
       include: { user: { select: { id: true, name: true } } },
