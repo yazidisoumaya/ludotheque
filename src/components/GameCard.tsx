@@ -25,7 +25,7 @@ interface GameCardProps {
 export default function GameCard({ game, onClick, actions }: GameCardProps) {
   return (
     <Card
-      className={`transition-shadow overflow-hidden flex flex-col ${onClick ? "cursor-pointer hover:shadow-md" : ""}`}
+      className={`transition-shadow overflow-hidden flex flex-col py-0 gap-0 ${onClick ? "cursor-pointer hover:shadow-md" : ""}`}
       onClick={onClick}
     >
       {/* Cover image from BGG */}
@@ -34,13 +34,13 @@ export default function GameCard({ game, onClick, actions }: GameCardProps) {
         <img
           src={game.imageUrl}
           alt={game.title}
-          className="w-full h-36 object-cover"
+          className="w-full h-20 object-cover"
         />
       )}
 
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-1 pt-2 px-3">
         <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-base leading-tight">{game.title}</CardTitle>
+          <CardTitle className="text-sm leading-tight">{game.title}</CardTitle>
           {game.category && (
             <Badge variant="secondary" className="shrink-0 text-xs">
               {game.category}
@@ -51,7 +51,7 @@ export default function GameCard({ game, onClick, actions }: GameCardProps) {
           <p className="text-xs text-muted-foreground">par {game.user.name}</p>
         )}
       </CardHeader>
-      <CardContent className="pb-3 flex flex-col flex-1">
+      <CardContent className="pb-2 px-3 flex flex-col flex-1">
         <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
           {(game.minPlayers || game.maxPlayers) && (
             <span className="flex items-center gap-1">
