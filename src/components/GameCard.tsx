@@ -1,8 +1,8 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Clock } from "lucide-react";
+import { Users } from "lucide-react";
 
 interface Game {
   id: number;
@@ -38,37 +38,34 @@ export default function GameCard({ game, onClick, actions }: GameCardProps) {
         />
       )}
 
-      <CardHeader className="pb-1 pt-2 px-3">
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="text-sm leading-tight">{game.title}</CardTitle>
+      <CardContent className="px-3 pt-2 pb-2 flex flex-col flex-1 gap-1">
+        {/* Titre */}
+        <p className="text-sm font-semibold leading-tight">{game.title}</p>
+
+        {/* Détenteur + catégorie */}
+        <div className="flex items-center justify-between gap-1">
+          {game.user ? (
+            <p className="text-xs text-muted-foreground truncate">par {game.user.name}</p>
+          ) : <span />}
           {game.category && (
             <Badge variant="secondary" className="shrink-0 text-xs">
               {game.category}
             </Badge>
           )}
         </div>
-        {game.user && (
-          <p className="text-xs text-muted-foreground">par {game.user.name}</p>
+
+        {/* Nombre de joueurs */}
+        {(game.minPlayers || game.maxPlayers) && (
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Users className="h-3 w-3" />
+            {game.minPlayers === game.maxPlayers
+              ? `${game.minPlayers} joueurs`
+              : `${game.minPlayers ?? "?"}–${game.maxPlayers ?? "?"} joueurs`}
+          </span>
         )}
-      </CardHeader>
-      <CardContent className="pb-2 px-3 flex flex-col flex-1">
-        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
-          {(game.minPlayers || game.maxPlayers) && (
-            <span className="flex items-center gap-1">
-              <Users className="h-3.5 w-3.5" />
-              {game.minPlayers === game.maxPlayers
-                ? `${game.minPlayers} joueurs`
-                : `${game.minPlayers ?? "?"}–${game.maxPlayers ?? "?"} joueurs`}
-            </span>
-          )}
-          {game.minAge && (
-            <span className="flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5" />
-              {game.minAge}+ ans
-            </span>
-          )}
-        </div>
-        {actions && <div className="mt-auto pt-3">{actions}</div>}
+
+        {/* Bouton */}
+        {actions && <div className="mt-auto pt-2">{actions}</div>}
       </CardContent>
     </Card>
   );
