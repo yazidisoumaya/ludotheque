@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(export PATH=\"$HOME/.nvm/versions/node/v24.14.0/bin:$PATH\")",
+      "Bash(npx prisma migrate dev --name init)",
+      "Bash(npx prisma generate)",
+      "Bash(npm install @prisma/adapter-better-sqlite3)",
+      "Bash(npm run build)",
+      "Bash(ls /Users/siwsiw/projects/ludotheque/*.db)",
+      "Bash(git remote get-url origin)"
+    ]
+  }
+}

@@ -1,0 +1,48 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        Int        @id @default(autoincrement())
+  name      String
+  createdAt DateTime   @default(now())
+  games     Game[]
+  sent      Exchange[] @relation("requester")
+  received  Exchange[] @relation("owner")
+}
+
+model Game {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?
+  category    String?
+  minPlayers  Int?
+  maxPlayers  Int?
+  minAge      Int?
+  userId      Int
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime   @default(now())
+  exchanges   Exchange[]
+}
+
+model Exchange {
+  id          Int      @id @default(autoincrement())
+  requesterId Int
+  ownerId     Int
+  gameId      Int
+  status      String   @default("pending")
+  message     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  requester   User     @relation("requester", fields: [requesterId], references: [id])
+  owner       User     @relation("owner", fields: [ownerId], references: [id])
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+}
