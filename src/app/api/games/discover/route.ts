@@ -20,10 +20,17 @@ export async function GET(request: Request) {
     });
 
     // Flatten: expose activeExchange directly on each game
-    const result = games.map(({ exchanges, ...game }) => ({
-      ...game,
-      activeExchange: exchanges[0] ?? null,
-    }));
+    // Sort: available games first, games with active exchange last
+    const result = games
+      .map(({ exchanges, ...game }) => ({
+        ...game,
+        activeExchange: exchanges[0] ?? null,
+      }))
+      .sort((a, b) => {
+        if (a.activeExchange && !b.activeExchange) return 1;
+        if (!a.activeExchange && b.activeExchange) return -1;
+        return 0;
+      });
 
     return NextResponse.json(result);
   } catch (error) {
