@@ -6,7 +6,7 @@ import GameCard from "@/components/GameCard";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Link from "next/link";
-import { Plus, BookOpen, HandHelping } from "lucide-react";
+import { Plus, BookOpen, HandHelping, MapPin } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 interface Game {
@@ -123,6 +123,25 @@ export default function LibraryPage() {
                     key={game.id}
                     game={game}
                     onClick={() => router.push(`/library/${game.id}`)}
+                    actions={
+                      game.activeExchange ? (
+                        <p className="text-xs flex items-center gap-1 text-amber-600">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          Chez{" "}
+                          <span className="font-medium">
+                            {game.activeExchange.requester.name}
+                          </span>
+                          {game.activeExchange.status === "pending" && (
+                            <span className="text-muted-foreground"> · en attente</span>
+                          )}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-green-600 flex items-center gap-1">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          Disponible
+                        </p>
+                      )
+                    }
                   />
                 ))}
               </div>
