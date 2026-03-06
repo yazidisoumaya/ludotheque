@@ -52,11 +52,6 @@ export default function GameCard({ game, onClick, actions }: GameCardProps) {
         )}
       </CardHeader>
       <CardContent className="pb-3">
-        {game.description && (
-          <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
-            {game.description}
-          </p>
-        )}
         <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
           {(game.minPlayers || game.maxPlayers) && (
             <span className="flex items-center gap-1">
