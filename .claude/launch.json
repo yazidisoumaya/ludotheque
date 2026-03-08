@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ludotheque",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000,
+      "autoPort": true,
+      "env": {
+        "PATH": "/Users/siwsiw/.nvm/versions/node/v24.14.0/bin:/usr/local/bin:/usr/bin:/bin"
+      }
+    }
+  ]
+}
