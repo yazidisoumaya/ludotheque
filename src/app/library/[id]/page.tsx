@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ImageCapture } from "@/components/ImageCapture";
 import { ChevronLeft, Trash2 } from "lucide-react";
 import Link from "next/link";
 
@@ -138,17 +139,12 @@ export default function GameDetailPage() {
       )}
 
       <form onSubmit={handleSave} className="space-y-4">
-        {/* Image preview */}
-        {form.imageUrl && (
-          <div className="rounded-lg overflow-hidden border">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={form.imageUrl}
-              alt={form.title}
-              className="w-full h-44 object-contain bg-muted"
-            />
-          </div>
-        )}
+        {/* Image */}
+        <ImageCapture
+          value={form.imageUrl}
+          onChange={(v) => setForm((f) => ({ ...f, imageUrl: v }))}
+          disabled={!isOwner}
+        />
 
         <div className="space-y-2">
           <Label htmlFor="title">Titre *</Label>

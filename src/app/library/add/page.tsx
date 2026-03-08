@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import BggSearch, { type BggGame } from "@/components/BggSearch";
+import { ImageCapture } from "@/components/ImageCapture";
 import { ChevronLeft } from "lucide-react";
 import Link from "next/link";
 
@@ -104,17 +105,11 @@ export default function AddGamePage() {
       <div className="border-t pt-2" />
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Image preview */}
-        {form.imageUrl && (
-          <div className="rounded-lg overflow-hidden border">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={form.imageUrl}
-              alt={form.title}
-              className="w-full h-44 object-contain bg-muted"
-            />
-          </div>
-        )}
+        {/* Image */}
+        <ImageCapture
+          value={form.imageUrl}
+          onChange={(v) => setForm((f) => ({ ...f, imageUrl: v }))}
+        />
 
         <div className="space-y-2">
           <Label htmlFor="title">Titre *</Label>
