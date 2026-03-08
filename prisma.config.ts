@@ -3,16 +3,15 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
-// En production (Vercel) : Turso cloud SQLite
-// En dev local : SQLite fichier (DATABASE_URL)
-const databaseUrl = process.env.TURSO_DATABASE_URL ?? process.env.DATABASE_URL;
-
+// Le moteur de migration Prisma (Rust) ne supporte pas libsql://
+// → toujours utiliser SQLite local pour les commandes Prisma CLI
+// → la connexion Turso est gérée par src/lib/prisma.ts à runtime
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: databaseUrl,
+    url: process.env.DATABASE_URL,
   },
 });
