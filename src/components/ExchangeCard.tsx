@@ -79,14 +79,14 @@ export default function ExchangeCard({ exchange, currentUserId, onStatusChange }
           </div>
         )}
 
-        {!isOwner && exchange.status === "accepted" && onStatusChange && (
+        {isOwner && exchange.status === "accepted" && onStatusChange && (
           <Button
             size="sm"
             variant="outline"
             className="w-full"
             onClick={() => onStatusChange("completed")}
           >
-            Marquer comme terminé
+            Jeu récupéré
           </Button>
         )}
       </CardContent>
