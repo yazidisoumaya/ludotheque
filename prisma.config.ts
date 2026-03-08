@@ -3,12 +3,16 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
+// En production (Vercel) : Turso cloud SQLite
+// En dev local : SQLite fichier (DATABASE_URL)
+const databaseUrl = process.env.TURSO_DATABASE_URL ?? process.env.DATABASE_URL;
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url: databaseUrl,
   },
 });
