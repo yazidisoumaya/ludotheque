@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useUser } from "@/contexts/UserContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ interface UserData {
 
 export default function UserSelector() {
   const { currentUser, setCurrentUser } = useUser();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [users, setUsers] = useState<UserData[]>([]);
   const [newName, setNewName] = useState("");
@@ -54,6 +56,7 @@ export default function UserSelector() {
     setNewName("");
     setCreating(false);
     setOpen(false);
+    router.push("/library");
   };
 
   return (
