@@ -1,7 +1,25 @@
 import { NextResponse } from "next/server";
 import { XMLParser } from "fast-xml-parser";
+import gamesJson from "@/data/games.json";
 
-// ─── BGG (via authenticated session) ────────────────────────────────────────
+// ─── Local games index (CSV BGG, top 10 000 jeux) ────────────────────────────
+
+type LocalGame = [number, string, number | null, number | null, number | null];
+const GAMES = gamesJson as unknown as LocalGame[];
+
+function searchLocalData(q: string): LocalGame[] {
+  const lower = q.toLowerCase();
+  const results: LocalGame[] = [];
+  for (const game of GAMES) {
+    if ((game[1] as string).toLowerCase().includes(lower)) {
+      results.push(game);
+      if (results.length >= 8) break;
+    }
+  }
+  return results;
+}
+
+// ─── BGG (via token officiel) ─────────────────────────────────────────────────
 
 const BGG_API = "https://boardgamegeek.com/xmlapi2";
 const BGG_LOGIN_URL = "https://boardgamegeek.com/login/api/v1";
@@ -10,10 +28,7 @@ const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_
 let bggSessionCookie: string | null = null;
 
 async function getBggSession(): Promise<string | null> {
-  // Option 1: pre-configured session cookie from browser (most reliable)
   if (process.env.BGG_SESSION_COOKIE) return process.env.BGG_SESSION_COOKIE;
-
-  // Option 2: login via API (blocked by Cloudflare in most environments)
   const username = process.env.BGG_USERNAME;
   const password = process.env.BGG_PASSWORD;
   if (!username || !password) return null;
@@ -23,18 +38,14 @@ async function getBggSession(): Promise<string | null> {
     headers: { "Content-Type": "application/json", Origin: "https://boardgamegeek.com" },
     body: JSON.stringify({ credentials: { username, password } }),
   });
-
   if (!res.ok) return null;
-
   const setCookie = res.headers.get("set-cookie");
   if (!setCookie) return null;
-
   const cookies = setCookie
     .split(/,(?=[^ ])/)
     .map((c) => c.split(";")[0].trim())
     .filter((c) => c.startsWith("bggusername=") || c.startsWith("SessionID="))
     .join("; ");
-
   return cookies || null;
 }
 
@@ -49,11 +60,13 @@ const BGG_CATEGORY_MAP: Record<string, string> = {
   "Economic": "Stratégie",
   "Negotiation": "Stratégie",
   "Word Game": "Ambiance",
+  "Negotiation Game": "Stratégie",
+  "Strategy Game": "Stratégie",
 };
 
 async function searchBGG(q: string) {
   if (!bggSessionCookie) bggSessionCookie = await getBggSession();
-  if (!bggSessionCookie) return null; // No credentials configured
+  if (!bggSessionCookie) return null;
 
   const headers: Record<string, string> = {
     "User-Agent": "LudothequeApp/1.0",
@@ -61,26 +74,21 @@ async function searchBGG(q: string) {
   };
 
   const searchRes = await fetch(`${BGG_API}/search?query=${encodeURIComponent(q)}&type=boardgame`, {
-    headers,
-    next: { revalidate: 3600 },
+    headers, next: { revalidate: 3600 },
   });
-
-  // Refresh session on 401 and retry once
   if (searchRes.status === 401) {
     bggSessionCookie = await getBggSession();
     if (!bggSessionCookie) return null;
     headers.Cookie = bggSessionCookie;
-    const retry = await fetch(`${BGG_API}/search?query=${encodeURIComponent(q)}&type=boardgame`, { headers });
-    if (!retry.ok) return null;
   } else if (!searchRes.ok) {
     return null;
   }
 
-  const finalSearchRes = searchRes.status === 401
+  const finalRes = searchRes.status === 401
     ? await fetch(`${BGG_API}/search?query=${encodeURIComponent(q)}&type=boardgame`, { headers })
     : searchRes;
 
-  const searchXml = await finalSearchRes.text();
+  const searchXml = await finalRes.text();
   const searchData = parser.parse(searchXml);
   const rawItems = searchData?.items?.item;
   if (!rawItems) return [];
@@ -120,14 +128,49 @@ async function searchBGG(q: string) {
     const cats = (linkArr as Record<string, unknown>[])
       .filter((l) => l["@_type"] === "boardgamecategory")
       .map((l) => String(l["@_value"]));
-    const category = cats.map((c) => BGG_CATEGORY_MAP[c]).find(Boolean) ?? (cats.length ? "Plateau" : "Autre");
+    const category = cats.map((c) => BGG_CATEGORY_MAP[c]).find(Boolean) ?? (cats.length ? "Autre" : "Autre");
 
     return { bggId: id, title, thumbnail: thumbnail?.startsWith("http") ? thumbnail : null,
       description: null, minPlayers, maxPlayers, minAge, yearPublished, category };
   }).filter(Boolean);
 }
 
-// ─── Wikidata (fallback) ─────────────────────────────────────────────────────
+// ─── Geekdo enrichment ───────────────────────────────────────────────────────
+
+const GEEKDO_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
+  "Accept": "application/json",
+};
+
+async function fetchGeekdoDetails(bggId: number) {
+  try {
+    const res = await fetch(
+      `https://api.geekdo.com/api/geekitems?objecttype=thing&objectid=${bggId}`,
+      { headers: GEEKDO_HEADERS, signal: AbortSignal.timeout(3000), next: { revalidate: 3600 } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const item = data?.item;
+    if (!item) return null;
+
+    const cats = (item.links?.boardgamecategory || []) as { name: string }[];
+    const category = cats.map((c) => BGG_CATEGORY_MAP[c.name]).find(Boolean) ?? "Autre";
+
+    return {
+      thumbnail: (item.imageurl as string) || null,
+      description: (item.short_description as string) || null,
+      minPlayers: item.minplayers ? parseInt(String(item.minplayers), 10) || null : null,
+      maxPlayers: item.maxplayers ? parseInt(String(item.maxplayers), 10) || null : null,
+      minAge: item.minage ? parseInt(String(item.minage), 10) || null : null,
+      yearPublished: item.yearpublished ? String(item.yearpublished) : null,
+      category,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// ─── Wikidata (fallback pour les jeux non trouvés en local) ──────────────────
 
 const WIKIDATA_API = "https://www.wikidata.org/w/api.php";
 const COMMONS_FILE_PATH = "https://commons.wikimedia.org/wiki/Special:FilePath/";
@@ -194,13 +237,11 @@ async function wikidataSearch(q: string, language: string): Promise<{ id: string
 async function searchWikidata(q: string) {
   type WResult = { id: string; label?: string; description?: string };
 
-  // Recherche en parallèle en français ET en anglais
   const [frResults, enResults] = await Promise.all([
     wikidataSearch(q, "fr"),
     wikidataSearch(q, "en"),
   ]);
 
-  // Fusionner et dédupliquer par ID (priorité aux résultats FR)
   const seen = new Set<string>();
   const candidates: WResult[] = [];
   for (const item of [...frResults, ...enResults]) {
@@ -210,7 +251,6 @@ async function searchWikidata(q: string) {
     }
   }
 
-  // Filtrer les jeux vidéo et autres non-souhaités
   const filtered = candidates.filter((item) =>
     !EXCLUDE_PHRASES.some((p) => (item.description || "").toLowerCase().includes(p))
   );
@@ -261,15 +301,36 @@ export async function GET(request: Request) {
     const q = searchParams.get("q")?.trim();
     if (!q || q.length < 2) return NextResponse.json([]);
 
-    // Use BGG if credentials are configured, otherwise fall back to Wikidata
+    // 1. BGG officiel (si token configuré)
     const hasBggCredentials = !!(process.env.BGG_USERNAME && process.env.BGG_PASSWORD);
-    const results = hasBggCredentials ? await searchBGG(q) : null;
-
-    if (results !== null) {
-      return NextResponse.json(results);
+    if (hasBggCredentials) {
+      const results = await searchBGG(q);
+      if (results !== null) return NextResponse.json(results);
     }
 
-    // Fallback: Wikidata
+    // 2. Index local (CSV BGG, 10 000 jeux) + enrichissement geekdo
+    const localMatches = searchLocalData(q);
+    if (localMatches.length > 0) {
+      const enriched = await Promise.all(
+        localMatches.map(async ([id, name, minP, maxP, minA]) => {
+          const details = await fetchGeekdoDetails(id);
+          return {
+            bggId: String(id),
+            title: name as string,
+            thumbnail: details?.thumbnail ?? null,
+            description: details?.description ?? null,
+            minPlayers: details?.minPlayers ?? minP,
+            maxPlayers: details?.maxPlayers ?? maxP,
+            minAge: details?.minAge ?? minA,
+            yearPublished: details?.yearPublished ?? null,
+            category: details?.category ?? "Autre",
+          };
+        })
+      );
+      return NextResponse.json(enriched);
+    }
+
+    // 3. Fallback Wikidata (jeux non anglophones ou absents de l'index local)
     const wikidataResults = await searchWikidata(q);
     return NextResponse.json(wikidataResults);
   } catch (error) {
