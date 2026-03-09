@@ -117,7 +117,7 @@ export default function LibraryPage() {
                 </Link>
               </div>
             ) : (
-              <div className="grid gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 {games.map((game) => (
                   <GameCard
                     key={game.id}
@@ -163,7 +163,7 @@ export default function LibraryPage() {
                 </Link>
               </div>
             ) : (
-              <div className="grid gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 {borrowed.map((exchange) => (
                   <GameCard
                     key={exchange.id}

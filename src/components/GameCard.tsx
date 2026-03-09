@@ -28,44 +28,48 @@ export default function GameCard({ game, onClick, actions }: GameCardProps) {
       className={`transition-shadow overflow-hidden flex flex-col py-0 gap-0 ${onClick ? "cursor-pointer hover:shadow-md" : ""}`}
       onClick={onClick}
     >
-      {/* Cover image from BGG */}
-      {game.imageUrl && (
+      {/* Cover image */}
+      {game.imageUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={game.imageUrl}
           alt={game.title}
-          className="w-full h-20 object-cover"
+          className="w-full aspect-square object-cover"
         />
+      ) : (
+        <div className="w-full aspect-square bg-muted flex items-center justify-center text-3xl select-none">
+          🎲
+        </div>
       )}
 
-      <CardContent className="px-3 pt-2 pb-2 flex flex-col flex-1 gap-1">
+      <CardContent className="px-2.5 pt-2 pb-2 flex flex-col flex-1 gap-1">
         {/* Titre */}
-        <p className="text-sm font-semibold leading-tight">{game.title}</p>
+        <p className="text-xs font-semibold leading-tight line-clamp-2">{game.title}</p>
 
-        {/* Détenteur + catégorie */}
-        <div className="flex items-center justify-between gap-1">
-          {game.user ? (
-            <p className="text-xs text-muted-foreground truncate">par {game.user.name}</p>
-          ) : <span />}
-          {game.category && (
-            <Badge variant="secondary" className="shrink-0 text-xs">
-              {game.category}
-            </Badge>
-          )}
-        </div>
+        {/* Catégorie */}
+        {game.category && (
+          <Badge variant="secondary" className="self-start text-xs px-1.5 py-0">
+            {game.category}
+          </Badge>
+        )}
 
         {/* Nombre de joueurs */}
         {(game.minPlayers || game.maxPlayers) && (
           <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Users className="h-3 w-3" />
+            <Users className="h-3 w-3 shrink-0" />
             {game.minPlayers === game.maxPlayers
-              ? `${game.minPlayers} joueurs`
-              : `${game.minPlayers ?? "?"}–${game.maxPlayers ?? "?"} joueurs`}
+              ? `${game.minPlayers} j`
+              : `${game.minPlayers ?? "?"}–${game.maxPlayers ?? "?"} j`}
           </span>
         )}
 
+        {/* Détenteur */}
+        {game.user && (
+          <p className="text-xs text-muted-foreground truncate">par {game.user.name}</p>
+        )}
+
         {/* Bouton */}
-        {actions && <div className="mt-auto pt-2">{actions}</div>}
+        {actions && <div className="mt-auto pt-1.5">{actions}</div>}
       </CardContent>
     </Card>
   );
