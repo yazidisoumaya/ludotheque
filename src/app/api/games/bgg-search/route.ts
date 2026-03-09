@@ -176,26 +176,47 @@ function getYear(claims: WikiClaimsMap): string | null {
   return t ? t.slice(1, 5) : null;
 }
 
-async function searchWikidata(q: string) {
+async function wikidataSearch(q: string, language: string): Promise<{ id: string; label?: string; description?: string }[]> {
   const searchUrl = new URL(WIKIDATA_API);
-  Object.entries({ action: "wbsearchentities", search: q, language: "fr",
-    type: "item", format: "json", limit: "50", uselang: "fr" })
+  Object.entries({ action: "wbsearchentities", search: q, language,
+    type: "item", format: "json", limit: "50", uselang: language })
     .forEach(([k, v]) => searchUrl.searchParams.set(k, v));
 
-  const searchRes = await fetch(searchUrl.toString(), {
+  const res = await fetch(searchUrl.toString(), {
     headers: { "User-Agent": "LudothequeApp/1.0" },
     next: { revalidate: 3600 },
   });
-  if (!searchRes.ok) return [];
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.search || [];
+}
 
-  const searchData = await searchRes.json();
+async function searchWikidata(q: string) {
   type WResult = { id: string; label?: string; description?: string };
-  const candidates = (searchData.search as WResult[] || []).filter((item) =>
+
+  // Recherche en parallèle en français ET en anglais
+  const [frResults, enResults] = await Promise.all([
+    wikidataSearch(q, "fr"),
+    wikidataSearch(q, "en"),
+  ]);
+
+  // Fusionner et dédupliquer par ID (priorité aux résultats FR)
+  const seen = new Set<string>();
+  const candidates: WResult[] = [];
+  for (const item of [...frResults, ...enResults]) {
+    if (!seen.has(item.id)) {
+      seen.add(item.id);
+      candidates.push(item);
+    }
+  }
+
+  // Filtrer les jeux vidéo et autres non-souhaités
+  const filtered = candidates.filter((item) =>
     !EXCLUDE_PHRASES.some((p) => (item.description || "").toLowerCase().includes(p))
   );
-  if (!candidates.length) return [];
+  if (!filtered.length) return [];
 
-  const topIds = candidates.slice(0, 10).map((i) => i.id);
+  const topIds = filtered.slice(0, 15).map((i) => i.id);
 
   const detailUrl = new URL(WIKIDATA_API);
   Object.entries({ action: "wbgetentities", ids: topIds.join("|"),
