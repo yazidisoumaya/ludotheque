@@ -119,7 +119,7 @@ export default function DiscoverPage() {
                         setSelected(game);
                       }}
                     >
-                      Échanger
+                      Emprunter
                     </Button>
                   )
                 }
@@ -133,7 +133,7 @@ export default function DiscoverPage() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>
-              {success ? "Demande envoyée !" : `Échanger "${selected?.title}"`}
+              {success ? "Demande envoyée !" : `Emprunter "${selected?.title}"`}
             </DialogTitle>
           </DialogHeader>
           {success ? (
