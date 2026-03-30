@@ -29,6 +29,25 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       include: { user: { select: { id: true, name: true } } },
     });
 
+    // Notif Slack uniquement si "Je participe" sur la prochaine séance
+    const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+    if (webhookUrl && status === "going") {
+      const nextEvent = await prisma.event.findFirst({
+        where: { date: { gte: new Date() } },
+        orderBy: { date: "asc" },
+      });
+      if (nextEvent && nextEvent.id === eventId) {
+        const formattedDate = new Date(nextEvent.date).toLocaleDateString("fr-FR", {
+          weekday: "long", day: "numeric", month: "long",
+        });
+        fetch(webhookUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: `*${response.user.name}* participe à la séance de *${formattedDate}* 🎲` }),
+        }).catch(() => {});
+      }
+    }
+
     return NextResponse.json(response);
   } catch (error) {
     console.error("POST /api/events/[id]/response", error);
