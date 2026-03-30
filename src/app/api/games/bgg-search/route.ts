@@ -22,31 +22,22 @@ function searchLocalData(q: string): LocalGame[] {
 // ─── BGG (via token officiel) ─────────────────────────────────────────────────
 
 const BGG_API = "https://boardgamegeek.com/xmlapi2";
-const BGG_LOGIN_URL = "https://boardgamegeek.com/login/api/v1";
 const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: "@_" });
 
-let bggSessionCookie: string | null = null;
-
-async function getBggSession(): Promise<string | null> {
-  if (process.env.BGG_SESSION_COOKIE) return process.env.BGG_SESSION_COOKIE;
-  const username = process.env.BGG_USERNAME;
-  const password = process.env.BGG_PASSWORD;
-  if (!username || !password) return null;
-
-  const res = await fetch(BGG_LOGIN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Origin: "https://boardgamegeek.com" },
-    body: JSON.stringify({ credentials: { username, password } }),
-  });
-  if (!res.ok) return null;
-  const setCookie = res.headers.get("set-cookie");
-  if (!setCookie) return null;
-  const cookies = setCookie
-    .split(/,(?=[^ ])/)
-    .map((c) => c.split(";")[0].trim())
-    .filter((c) => c.startsWith("bggusername=") || c.startsWith("SessionID="))
-    .join("; ");
-  return cookies || null;
+function getBggHeaders(): Record<string, string> | null {
+  if (process.env.BGG_API_KEY) {
+    return {
+      "User-Agent": "LudothequeApp/1.0",
+      "Authorization": `Bearer ${process.env.BGG_API_KEY}`,
+    };
+  }
+  if (process.env.BGG_SESSION_COOKIE) {
+    return {
+      "User-Agent": "LudothequeApp/1.0",
+      "Cookie": process.env.BGG_SESSION_COOKIE,
+    };
+  }
+  return null;
 }
 
 const BGG_CATEGORY_MAP: Record<string, string> = {
@@ -65,30 +56,15 @@ const BGG_CATEGORY_MAP: Record<string, string> = {
 };
 
 async function searchBGG(q: string) {
-  if (!bggSessionCookie) bggSessionCookie = await getBggSession();
-  if (!bggSessionCookie) return null;
-
-  const headers: Record<string, string> = {
-    "User-Agent": "LudothequeApp/1.0",
-    Cookie: bggSessionCookie,
-  };
+  const headers = getBggHeaders();
+  if (!headers) return null;
 
   const searchRes = await fetch(`${BGG_API}/search?query=${encodeURIComponent(q)}&type=boardgame`, {
     headers, next: { revalidate: 3600 },
   });
-  if (searchRes.status === 401) {
-    bggSessionCookie = await getBggSession();
-    if (!bggSessionCookie) return null;
-    headers.Cookie = bggSessionCookie;
-  } else if (!searchRes.ok) {
-    return null;
-  }
+  if (!searchRes.ok) return null;
 
-  const finalRes = searchRes.status === 401
-    ? await fetch(`${BGG_API}/search?query=${encodeURIComponent(q)}&type=boardgame`, { headers })
-    : searchRes;
-
-  const searchXml = await finalRes.text();
+  const searchXml = await searchRes.text();
   const searchData = parser.parse(searchXml);
   const rawItems = searchData?.items?.item;
   if (!rawItems) return [];
@@ -301,9 +277,9 @@ export async function GET(request: Request) {
     const q = searchParams.get("q")?.trim();
     if (!q || q.length < 2) return NextResponse.json([]);
 
-    // 1. BGG officiel (si token configuré)
-    const hasBggCredentials = !!(process.env.BGG_USERNAME && process.env.BGG_PASSWORD);
-    if (hasBggCredentials) {
+    // 1. BGG officiel (si API key ou session cookie configuré)
+    const hasBggAuth = !!(process.env.BGG_API_KEY || process.env.BGG_SESSION_COOKIE);
+    if (hasBggAuth) {
       const results = await searchBGG(q);
       if (results !== null) return NextResponse.json(results);
     }
