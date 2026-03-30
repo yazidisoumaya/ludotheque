@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import Image from "next/image";
 import "./globals.css";
 import { UserProvider } from "@/contexts/UserContext";
 import BottomNav from "@/components/BottomNav";
 import UserSelector from "@/components/UserSelector";
-import { Library } from "lucide-react";
 
 const geist = Geist({ subsets: ["latin"] });
 
@@ -26,7 +26,7 @@ export default function RootLayout({
             <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
               <div className="flex h-14 items-center justify-between px-4">
                 <div className="flex items-center gap-2 font-bold text-lg">
-                  <Library className="h-5 w-5 text-primary" />
+                  <Image src="/logo.png" alt="Ludothèque" width={32} height={32} />
                   Ludothèque
                 </div>
                 <UserSelector />
