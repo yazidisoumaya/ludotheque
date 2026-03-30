@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Compass, ArrowLeftRight } from "lucide-react";
+import { BookOpen, Compass, ArrowLeftRight, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { href: "/library", label: "Bibliothèque", icon: BookOpen },
   { href: "/discover", label: "Découvrir", icon: Compass },
   { href: "/exchanges", label: "Échanges", icon: ArrowLeftRight },
+  { href: "/events", label: "Évènements", icon: CalendarDays },
 ];
 
 export default function BottomNav() {

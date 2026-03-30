@@ -11,13 +11,15 @@ datasource db {
 }
 
 model User {
-  id        Int        @id @default(autoincrement())
-  name      String
-  createdAt DateTime   @default(now())
-  games     Game[]
-  sent      Exchange[] @relation("requester")
-  received  Exchange[] @relation("owner")
+  id             Int             @id @default(autoincrement())
+  name           String
+  createdAt      DateTime        @default(now())
+  games          Game[]
+  sent           Exchange[]      @relation("requester")
+  received       Exchange[]      @relation("owner")
+  eventResponses EventResponse[]
 }
+
 
 model Game {
   id          Int        @id @default(autoincrement())
@@ -32,6 +34,24 @@ model Game {
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime   @default(now())
   exchanges   Exchange[]
+}
+
+model Event {
+  id        Int             @id @default(autoincrement())
+  date      DateTime        @unique
+  createdAt DateTime        @default(now())
+  responses EventResponse[]
+}
+
+model EventResponse {
+  id      Int    @id @default(autoincrement())
+  eventId Int
+  userId  Int
+  status  String // "going" | "maybe" | "absent"
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
 }
 
 model Exchange {
