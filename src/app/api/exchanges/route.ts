@@ -60,6 +60,19 @@ export async function POST(request: Request) {
       },
     });
 
+    // Notification Slack au propriétaire du jeu
+    const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+    if (webhookUrl) {
+      const msg = exchange.message
+        ? `*${exchange.requester.name}* aimerait emprunter *${exchange.game.title}* à ${exchange.owner.name} :\n> ${exchange.message}`
+        : `*${exchange.requester.name}* aimerait emprunter *${exchange.game.title}* à ${exchange.owner.name}.`;
+      fetch(webhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: msg }),
+      }).catch(() => {});
+    }
+
     return NextResponse.json(exchange, { status: 201 });
   } catch (error) {
     console.error("POST /api/exchanges", error);
