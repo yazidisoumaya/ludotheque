@@ -6,12 +6,13 @@ export async function GET() {
   try {
     await generateUpcomingEvents(prisma);
 
-    const horizon = new Date();
-    horizon.setUTCHours(0, 0, 0, 0);
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const horizon = new Date(today);
     horizon.setUTCDate(horizon.getUTCDate() + 7);
 
     const events = await prisma.event.findMany({
-      where: { date: { lte: horizon } },
+      where: { date: { gte: today, lte: horizon } },
       orderBy: { date: "asc" },
       include: {
         responses: {
