@@ -32,8 +32,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     // Notif Slack uniquement si "Je participe" sur la prochaine séance
     const webhookUrl = process.env.SLACK_WEBHOOK_URL;
     if (webhookUrl && status === "going") {
+      const now = new Date();
+      now.setUTCHours(0, 0, 0, 0);
       const nextEvent = await prisma.event.findFirst({
-        where: { date: { gte: new Date() } },
+        where: { date: { gte: now } },
         orderBy: { date: "asc" },
       });
       if (nextEvent && nextEvent.id === eventId) {
