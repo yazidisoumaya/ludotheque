@@ -5,7 +5,7 @@ export async function generateUpcomingEvents(prisma: typeof prismaInstance) {
   today.setUTCHours(0, 0, 0, 0);
 
   const horizon = new Date(today);
-  horizon.setUTCDate(horizon.getUTCDate() + 30);
+  horizon.setUTCDate(horizon.getUTCDate() + 7);
 
   const targets: Date[] = [];
   const cursor = new Date(today);

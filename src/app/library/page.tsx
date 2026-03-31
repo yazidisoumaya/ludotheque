@@ -137,17 +137,19 @@ function LibraryPageInner() {
               ))}
             </div>
 
-            <Button
-              className="w-full"
-              onClick={handleConfirmGames}
-              disabled={confirming}
-            >
-              {confirming
-                ? "Enregistrement..."
-                : selectedGameIds.size === 0
-                ? "Confirmer sans jeu"
-                : `Confirmer (${selectedGameIds.size} jeu${selectedGameIds.size !== 1 ? "x" : ""})`}
-            </Button>
+            <div className="sticky bottom-4">
+              <Button
+                className="w-full shadow-lg"
+                onClick={handleConfirmGames}
+                disabled={confirming}
+              >
+                {confirming
+                  ? "Enregistrement..."
+                  : selectedGameIds.size === 0
+                  ? "Confirmer sans jeu"
+                  : `Confirmer (${selectedGameIds.size} jeu${selectedGameIds.size !== 1 ? "x" : ""})`}
+              </Button>
+            </div>
           </>
         )}
       </div>
