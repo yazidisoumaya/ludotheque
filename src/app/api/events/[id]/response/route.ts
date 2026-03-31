@@ -3,6 +3,24 @@ import { prisma } from "@/lib/prisma";
 
 const VALID_STATUSES = ["going", "maybe", "absent"] as const;
 
+function formatDate(date: Date) {
+  return date.toLocaleDateString("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
+
+async function sendSlackNotification(text: string) {
+  const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+  if (!webhookUrl) return;
+  await fetch(webhookUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
+  }).catch(() => {});
+}
+
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
@@ -22,32 +40,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: "Statut invalide" }, { status: 400 });
     }
 
-    const response = await prisma.eventResponse.upsert({
-      where: { eventId_userId: { eventId, userId: parseInt(userId) } },
-      create: { eventId, userId: parseInt(userId), status },
-      update: { status },
-      include: { user: { select: { id: true, name: true } } },
-    });
+    const [response, event] = await Promise.all([
+      prisma.eventResponse.upsert({
+        where: { eventId_userId: { eventId, userId: parseInt(userId) } },
+        create: { eventId, userId: parseInt(userId), status },
+        update: { status },
+        include: { user: { select: { id: true, name: true } } },
+      }),
+      prisma.event.findUnique({ where: { id: eventId } }),
+    ]);
 
-    // Notif Slack uniquement si "Je participe" sur la prochaine séance
-    const webhookUrl = process.env.SLACK_WEBHOOK_URL;
-    if (webhookUrl && status === "going") {
-      const now = new Date();
-      now.setUTCHours(0, 0, 0, 0);
-      const nextEvent = await prisma.event.findFirst({
-        where: { date: { gte: now } },
-        orderBy: { date: "asc" },
-      });
-      if (nextEvent && nextEvent.id === eventId) {
-        const formattedDate = new Date(nextEvent.date).toLocaleDateString("fr-FR", {
-          weekday: "long", day: "numeric", month: "long",
-        });
-        await fetch(webhookUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text: `*${response.user.name}* participe à la séance de *${formattedDate}* 🎲` }),
-        }).catch(() => {});
-      }
+    if (status === "going" && event) {
+      await sendSlackNotification(
+        `*${response.user.name}* participe à la séance du *${formatDate(new Date(event.date))}* 🎲`
+      );
     }
 
     return NextResponse.json(response);
