@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -13,10 +15,17 @@ type EventResponse = {
   user: { id: number; name: string };
 };
 
+type BroughtGame = {
+  userId: number;
+  userName: string;
+  games: { id: number; title: string }[];
+};
+
 type Event = {
   id: number;
   date: string;
   responses: EventResponse[];
+  eventGames?: BroughtGame[];
 };
 
 type User = { id: number; name: string };
@@ -28,7 +37,9 @@ type Props = {
 };
 
 export default function EventCard({ event, currentUser, onRespond }: Props) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [showDialog, setShowDialog] = useState(false);
 
   const userResponse = event.responses.find((r) => r.user.id === currentUser.id)?.status ?? null;
   const goingCount = event.responses.filter((r) => r.status === "going").length;
@@ -42,6 +53,15 @@ export default function EventCard({ event, currentUser, onRespond }: Props) {
   const going = event.responses.filter((r) => r.status === "going");
   const maybe = event.responses.filter((r) => r.status === "maybe");
   const absent = event.responses.filter((r) => r.status === "absent");
+
+  function handleGoingClick() {
+    if (userResponse === "going") {
+      // déjà inscrit — on garde le comportement existant
+      onRespond(event.id, "going");
+    } else {
+      setShowDialog(true);
+    }
+  }
 
   return (
     <Card>
@@ -58,7 +78,7 @@ export default function EventCard({ event, currentUser, onRespond }: Props) {
             size="sm"
             variant={userResponse === "going" ? "default" : "outline"}
             className={cn("flex-1", userResponse === "going" && "ring-2 ring-primary ring-offset-1")}
-            onClick={() => onRespond(event.id, "going")}
+            onClick={handleGoingClick}
           >
             Je participe
           </Button>
@@ -114,12 +134,53 @@ export default function EventCard({ event, currentUser, onRespond }: Props) {
                 </div>
               </div>
             )}
+            {event.eventGames && event.eventGames.length > 0 && (
+              <div>
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Jeux apportés</span>
+                <div className="mt-1 space-y-0.5">
+                  {event.eventGames.map((eg) => (
+                    <p key={eg.userId} className="text-xs">
+                      <span className="font-medium">{eg.userName}</span> amène{" "}
+                      {eg.games.map((g) => g.title).join(", ")}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
             {event.responses.length === 0 && (
               <p className="text-muted-foreground text-xs">Aucune réponse pour l&apos;instant.</p>
             )}
           </div>
         )}
       </CardContent>
+
+      <Dialog open={showDialog} onOpenChange={setShowDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Veux-tu ramener des jeux ?</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-2 pt-2">
+            <Button
+              onClick={() => {
+                setShowDialog(false);
+                onRespond(event.id, "going");
+                router.push(`/library?eventId=${event.id}`);
+              }}
+            >
+              Oui, je choisis mes jeux
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDialog(false);
+                onRespond(event.id, "going");
+              }}
+            >
+              Non, juste participer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

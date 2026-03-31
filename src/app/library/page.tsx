@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useUser } from "@/contexts/UserContext";
 import GameCard from "@/components/GameCard";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import Link from "next/link";
-import { Plus, BookOpen, HandHelping, MapPin } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Plus, BookOpen, HandHelping, MapPin, Check, ChevronLeft } from "lucide-react";
 
 interface Game {
   id: number;
@@ -30,12 +30,18 @@ interface BorrowedExchange {
   game: Game;
 }
 
-export default function LibraryPage() {
+function LibraryPageInner() {
   const { currentUser } = useUser();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const eventId = searchParams.get("eventId") ? parseInt(searchParams.get("eventId")!) : null;
+  const isSelectionMode = eventId !== null;
+
   const [games, setGames] = useState<Game[]>([]);
   const [borrowed, setBorrowed] = useState<BorrowedExchange[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedGameIds, setSelectedGameIds] = useState<Set<number>>(new Set());
+  const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     if (!currentUser) {
@@ -47,7 +53,6 @@ export default function LibraryPage() {
       fetch(`/api/exchanges?userId=${currentUser.id}`).then((r) => r.json()),
     ]).then(([gamesData, exchangesData]) => {
       setGames(gamesData);
-      // Emprunts = échanges où je suis le demandeur, en cours (pending/accepted)
       setBorrowed(
         (exchangesData as BorrowedExchange[]).filter(
           (e) => e.requesterId === currentUser.id && ["pending", "accepted"].includes(e.status)
@@ -56,6 +61,25 @@ export default function LibraryPage() {
       setLoading(false);
     });
   }, [currentUser]);
+
+  async function handleConfirmGames() {
+    if (!currentUser || !eventId) return;
+    setConfirming(true);
+    await fetch(`/api/events/${eventId}/games`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId: currentUser.id, gameIds: Array.from(selectedGameIds) }),
+    });
+    router.push("/events");
+  }
+
+  function toggleGame(gameId: number) {
+    setSelectedGameIds((prev) => {
+      const next = new Set(prev);
+      next.has(gameId) ? next.delete(gameId) : next.add(gameId);
+      return next;
+    });
+  }
 
   if (!currentUser) {
     return (
@@ -71,6 +95,66 @@ export default function LibraryPage() {
     );
   }
 
+  // ── Mode sélection ──────────────────────────────────────────────
+  if (isSelectionMode) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => router.push("/events")}>
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-bold">Quels jeux amènes-tu ?</h1>
+        </div>
+
+        {loading ? (
+          <div className="text-center py-10 text-muted-foreground text-sm">Chargement...</div>
+        ) : games.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
+            <BookOpen className="h-10 w-10 text-muted-foreground" />
+            <p className="text-muted-foreground text-sm">Tu n&apos;as pas encore de jeux dans ta bibliothèque.</p>
+            <Link href="/library/add">
+              <Button variant="outline" size="sm">Ajouter un jeu</Button>
+            </Link>
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              {games.map((game) => (
+                <div
+                  key={game.id}
+                  className="relative cursor-pointer"
+                  onClick={() => toggleGame(game.id)}
+                >
+                  {selectedGameIds.has(game.id) && (
+                    <div className="absolute top-1.5 right-1.5 z-10 rounded-full bg-primary p-0.5">
+                      <Check className="h-3 w-3 text-primary-foreground" />
+                    </div>
+                  )}
+                  <div className={selectedGameIds.has(game.id) ? "ring-2 ring-primary rounded-lg" : ""}>
+                    <GameCard game={game} />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <Button
+              className="w-full"
+              onClick={handleConfirmGames}
+              disabled={confirming}
+            >
+              {confirming
+                ? "Enregistrement..."
+                : selectedGameIds.size === 0
+                ? "Confirmer sans jeu"
+                : `Confirmer (${selectedGameIds.size} jeu${selectedGameIds.size !== 1 ? "x" : ""})`}
+            </Button>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // ── Mode normal ─────────────────────────────────────────────────
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -102,7 +186,6 @@ export default function LibraryPage() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Onglet Ma collection */}
           <TabsContent value="collection" className="mt-3">
             {games.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
@@ -111,9 +194,7 @@ export default function LibraryPage() {
                   Tu n&apos;as pas encore de jeux dans ta bibliothèque.
                 </p>
                 <Link href="/library/add">
-                  <Button variant="outline" size="sm">
-                    Ajouter mon premier jeu
-                  </Button>
+                  <Button variant="outline" size="sm">Ajouter mon premier jeu</Button>
                 </Link>
               </div>
             ) : (
@@ -128,9 +209,7 @@ export default function LibraryPage() {
                         <p className="text-xs flex items-center gap-1 text-amber-600">
                           <MapPin className="h-3 w-3 shrink-0" />
                           Chez{" "}
-                          <span className="font-medium">
-                            {game.activeExchange.requester.name}
-                          </span>
+                          <span className="font-medium">{game.activeExchange.requester.name}</span>
                           {game.activeExchange.status === "pending" && (
                             <span className="text-muted-foreground"> · en attente</span>
                           )}
@@ -148,18 +227,13 @@ export default function LibraryPage() {
             )}
           </TabsContent>
 
-          {/* Onglet Mes emprunts */}
           <TabsContent value="borrowed" className="mt-3">
             {borrowed.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-center gap-3">
                 <HandHelping className="h-10 w-10 text-muted-foreground" />
-                <p className="text-muted-foreground text-sm">
-                  Tu n&apos;as aucun emprunt en cours.
-                </p>
+                <p className="text-muted-foreground text-sm">Tu n&apos;as aucun emprunt en cours.</p>
                 <Link href="/discover">
-                  <Button variant="outline" size="sm">
-                    Découvrir des jeux
-                  </Button>
+                  <Button variant="outline" size="sm">Découvrir des jeux</Button>
                 </Link>
               </div>
             ) : (
@@ -186,5 +260,13 @@ export default function LibraryPage() {
         </Tabs>
       )}
     </div>
+  );
+}
+
+export default function LibraryPage() {
+  return (
+    <Suspense>
+      <LibraryPageInner />
+    </Suspense>
   );
 }

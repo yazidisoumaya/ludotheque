@@ -18,11 +18,12 @@ model User {
   sent           Exchange[]      @relation("requester")
   received       Exchange[]      @relation("owner")
   eventResponses EventResponse[]
+  eventGames     EventGame[]
 }
 
 
 model Game {
-  id          Int        @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   title       String
   description String?
   category    String?
@@ -31,16 +32,30 @@ model Game {
   minAge      Int?
   imageUrl    String?
   userId      Int
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt   DateTime   @default(now())
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
   exchanges   Exchange[]
+  eventGames  EventGame[]
 }
 
 model Event {
-  id        Int             @id @default(autoincrement())
-  date      DateTime        @unique
-  createdAt DateTime        @default(now())
-  responses EventResponse[]
+  id         Int             @id @default(autoincrement())
+  date       DateTime        @unique
+  createdAt  DateTime        @default(now())
+  responses  EventResponse[]
+  eventGames EventGame[]
+}
+
+model EventGame {
+  id      Int   @id @default(autoincrement())
+  eventId Int
+  userId  Int
+  gameId  Int
+  event   Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user    User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game    Game  @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId, gameId])
 }
 
 model EventResponse {
