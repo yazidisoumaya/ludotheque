@@ -66,7 +66,7 @@ export async function POST(request: Request) {
       const msg = exchange.message
         ? `*${exchange.requester.name}* aimerait emprunter *${exchange.game.title}* à ${exchange.owner.name} :\n> ${exchange.message}`
         : `*${exchange.requester.name}* aimerait emprunter *${exchange.game.title}* à ${exchange.owner.name}.`;
-      fetch(webhookUrl, {
+      await fetch(webhookUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: msg }),

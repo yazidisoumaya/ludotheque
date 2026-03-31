@@ -42,7 +42,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         const formattedDate = new Date(nextEvent.date).toLocaleDateString("fr-FR", {
           weekday: "long", day: "numeric", month: "long",
         });
-        fetch(webhookUrl, {
+        await fetch(webhookUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text: `*${response.user.name}* participe à la séance de *${formattedDate}* 🎲` }),
