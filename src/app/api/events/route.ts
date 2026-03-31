@@ -6,8 +6,11 @@ export async function GET() {
   try {
     await generateUpcomingEvents(prisma);
 
+    // Supprimer les séances passées
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0);
+    await prisma.event.deleteMany({ where: { date: { lt: today } } });
+
     const horizon = new Date(today);
     horizon.setUTCDate(horizon.getUTCDate() + 7);
 
