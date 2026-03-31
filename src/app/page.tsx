@@ -2,7 +2,7 @@
 
 import { useUser } from "@/contexts/UserContext";
 import Link from "next/link";
-import { BookOpen, Compass, ArrowLeftRight } from "lucide-react";
+import { BookOpen, Compass, ArrowLeftRight, CalendarDays } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
 export default function HomePage() {
@@ -62,6 +62,22 @@ export default function HomePage() {
                 <p className="font-semibold">Mes échanges</p>
                 <p className="text-sm text-muted-foreground">
                   Suivre les demandes d&apos;échange
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/events">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardContent className="flex items-center gap-4 pt-4 pb-4">
+              <div className="rounded-full bg-purple-100 p-3">
+                <CalendarDays className="h-6 w-6 text-purple-600" />
+              </div>
+              <div>
+                <p className="font-semibold">Évènements</p>
+                <p className="text-sm text-muted-foreground">
+                  Séances de jeux à venir
                 </p>
               </div>
             </CardContent>

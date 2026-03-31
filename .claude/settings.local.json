@@ -24,7 +24,13 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://raw.githubusercontent.com/beefsack/bgg-ranking/master/2024-12-01.csv\")",
       "Bash(curl -s \"https://raw.githubusercontent.com/beefsack/bgg-ranking/master/2024-12-01.csv\")",
       "Bash(curl -s \"https://api.github.com/repos/beefsack/bgg-ranking/git/trees/master?recursive=1\")",
-      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(t[''path'']\\) for t in d.get\\(''tree'',[]\\) if t[''path''].endswith\\(''.csv''\\)]\")"
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(t[''path'']\\) for t in d.get\\(''tree'',[]\\) if t[''path''].endswith\\(''.csv''\\)]\")",
+      "Bash(curl -s \"http://localhost:3000/api/games/bgg-search?q=catan\")",
+      "Bash(node -e \"const d=require\\(''fs''\\).readFileSync\\(''/dev/stdin'',''utf8''\\); const r=JSON.parse\\(d\\); console.log\\(''Résultats:'', r.length\\); r.forEach\\(g=>console.log\\(''-'', g.title, ''| joueurs:'', g.minPlayers+''-''+g.maxPlayers, ''| âge:'', g.minAge\\)\\)\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(npx prisma:*)"
     ]
   }
 }

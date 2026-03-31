@@ -74,9 +74,10 @@ model Exchange {
   requesterId Int
   ownerId     Int
   gameId      Int
-  status      String   @default("pending")
-  message     String?
-  createdAt   DateTime @default(now())
+  status        String   @default("pending")
+  message       String?
+  ownerMessage  String?
+  createdAt     DateTime @default(now())
   updatedAt   DateTime @updatedAt
   requester   User     @relation("requester", fields: [requesterId], references: [id])
   owner       User     @relation("owner", fields: [ownerId], references: [id])

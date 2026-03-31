@@ -10,6 +10,7 @@ interface Exchange {
   id: number;
   status: string;
   message?: string | null;
+  ownerMessage?: string | null;
   createdAt: string;
   requesterId: number;
   ownerId: number;
@@ -41,11 +42,11 @@ export default function ExchangesPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentUser]);
 
-  const handleStatusChange = async (exchangeId: number, status: string) => {
+  const handleStatusChange = async (exchangeId: number, status: string, ownerMessage?: string) => {
     await fetch(`/api/exchanges/${exchangeId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, ownerMessage }),
     });
     fetchExchanges();
   };
@@ -96,7 +97,7 @@ export default function ExchangesPage() {
                     key={ex.id}
                     exchange={ex}
                     currentUserId={currentUser.id}
-                    onStatusChange={(status) => handleStatusChange(ex.id, status)}
+                    onStatusChange={(status, ownerMessage) => handleStatusChange(ex.id, status, ownerMessage)}
                   />
                 ))}
               </div>
@@ -115,7 +116,7 @@ export default function ExchangesPage() {
                     key={ex.id}
                     exchange={ex}
                     currentUserId={currentUser.id}
-                    onStatusChange={(status) => handleStatusChange(ex.id, status)}
+                    onStatusChange={(status, ownerMessage) => handleStatusChange(ex.id, status, ownerMessage)}
                   />
                 ))}
               </div>
